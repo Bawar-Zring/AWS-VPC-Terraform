@@ -102,10 +102,6 @@ output "public_ip_address1" {
  value = aws_instance.public1.public_ip
 }
 
-output "public_ip_address2" {
- value = aws_instance.private2.public_ip
-}
-
 resource "aws_key_pair" "ec2_test" {
  key_name = "test"
  public_key = file("./ssh-key.pub")
