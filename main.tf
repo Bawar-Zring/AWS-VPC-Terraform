@@ -1,5 +1,5 @@
 provider "aws" {
- region = "eu-west-3"
+ region = var.region
 }
 
 resource "aws_vpc" "main_vpc" {
@@ -10,44 +10,26 @@ resource "aws_vpc" "main_vpc" {
  }
 }
 
-resource "aws_subnet" "public_1" {
+resource "aws_subnet" "AZ_A" {
+  for_each = var.AZ_A_subnets
  vpc_id = aws_vpc.main_vpc.id
- cidr_block = "10.0.1.0/24"
+ cidr_block = each.value
  availability_zone = "eu-west-3a"
  map_public_ip_on_launch = true
 
  tags = {
-   Name = "public 1"
+   Name = each.key
  }
 }
 
-resource "aws_subnet" "public_2" {
+resource "aws_subnet" "AZ_B" {
+  for_each = var.AZ_B_subnets
  vpc_id = aws_vpc.main_vpc.id
- cidr_block = "10.0.2.0/24"
+ cidr_block = each.value
  availability_zone = "eu-west-3b"
 
  tags = {
-   Name = "public 2"
- }
-}
-
- resource "aws_subnet" "praivate_1" {
-  vpc_id = aws_vpc.main_vpc.id
-  cidr_block = "10.0.3.0/24"
-  availability_zone = "eu-west-3a"
-
-  tags = {
-    Name = "private 1"
-  }
- }
-
-resource "aws_subnet" "praivate_2" {
- vpc_id = aws_vpc.main_vpc.id
- cidr_block = "10.0.4.0/24"
- availability_zone = "eu-west-3b"
-
- tags = {
-   Name = "private 2"
+   Name = each.key
  }
 }
 
@@ -73,25 +55,25 @@ resource "aws_route_table" "pub_rt" {
 }
 
 resource "aws_route_table_association" "public_route_1" {
- subnet_id = aws_subnet.public_1.id
+ subnet_id = aws_subnet.AZ_A["public_subnet"].id
  route_table_id = aws_route_table.pub_rt.id
 }
 
 resource "aws_route_table_association" "public_route_2" {
- subnet_id = aws_subnet.public_2.id
+ subnet_id = aws_subnet.AZ_B["public_subnet"].id
  route_table_id = aws_route_table.pub_rt.id
 }
 
 resource "aws_instance" "public1" {
  ami = "ami-08461dc8cd9e834e0"
  instance_type = "t2.micro"
- subnet_id = aws_subnet.public_1.id
+ subnet_id = aws_subnet.AZ_A["public_subnet"].id
  key_name = aws_key_pair.ec2_test.key_name
  associate_public_ip_address = true
  vpc_security_group_ids = [aws_security_group.access.id]
 
  user_data = <<-EOF
- #!/bin/bash
+#!/bin/bash
 # Use this for your user data (script from top to bottom)
 # install httpd (Linux 2 version)
 yum update -y
@@ -109,7 +91,7 @@ EOF
 resource "aws_instance" "private2" {
  ami = "ami-08461dc8cd9e834e0"
  instance_type = "t2.micro"
- subnet_id = aws_subnet.praivate_2.id
+ subnet_id = aws_subnet.AZ_B["private_subnet"].id
 
  tags = {
    Name = "private AZ"
@@ -126,7 +108,7 @@ output "public_ip_address2" {
 
 resource "aws_key_pair" "ec2_test" {
  key_name = "test"
- public_key = file("./id_rsa.pub.pub")
+ public_key = file("./ssh-key.pub")
 }
 
 resource "aws_security_group" "access" {
@@ -155,4 +137,3 @@ resource "aws_security_group" "access" {
    cidr_blocks = ["0.0.0.0/0"]
   }
 }
-
