@@ -1,8 +1,10 @@
+run those command in the same directory:
+
 # Initialize the working directory
-terraform init
+1. terraform init
 # Plan the changes to be applied
-terraform plan
+2. terraform plan
 # Apply the changes
-terraform apply
+3. terraform apply
 # Destroy the resources
-terraform destroy
+4. terraform destroy
